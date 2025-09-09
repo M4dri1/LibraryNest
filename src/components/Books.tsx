@@ -27,18 +27,24 @@ const Books: React.FC = () => {
 
   const fetchBooks = async () => {
     try {
-      const offset = currentPage * limit
+      const page = currentPage + 1
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
-      const [booksRes, countRes] = await Promise.all([
-        axios.get(`/api/books?limit=${limit}&offset=${offset}${searchParam}`),
-        axios.get(`/api/books/count${searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ''}`)
-      ])
       
-      setBooks(booksRes.data)
-      setTotalPages(Math.ceil(countRes.data.total / limit))
+      const response = await axios.get(`/api/books?page=${page}&limit=${limit}${searchParam}`)
+      const booksData = response.data.books
+      if (Array.isArray(booksData)) {
+        setBooks(booksData)
+      } else {
+        console.error('Books data is not an array:', booksData)
+        setBooks([])
+      }
+      setTotalPages(response.data.totalPages || 0)
+      
       setLoading(false)
     } catch (err) {
+      console.error('Error fetching books:', err)
       setError('Failed to fetch books')
+      setBooks([])
       setLoading(false)
     }
   }
@@ -46,9 +52,17 @@ const Books: React.FC = () => {
   const fetchAuthors = async () => {
     try {
       const response = await axios.get('/api/authors?limit=9999&offset=0')
-      setAuthors(response.data)
+      const authorsData = response.data
+      if (Array.isArray(authorsData)) {
+        setAuthors(authorsData)
+      } else {
+        console.error('Authors data is not an array:', authorsData)
+        setAuthors([])
+      }
     } catch (err) {
+      console.error('Error fetching authors:', err)
       setError('Failed to fetch authors')
+      setAuthors([])
     }
   }
 

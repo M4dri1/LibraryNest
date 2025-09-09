@@ -25,9 +25,10 @@ DROP TABLE IF EXISTS `authors`;
 CREATE TABLE `authors`
 (
   `author_id` int NOT NULL AUTO_INCREMENT,
-  `name_author` varchar
-(100) NOT NULL,
+  `name_author` varchar(100) NOT NULL,
   `biography` text,
+  `photo` varchar(255),
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY
 (`author_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -179,8 +180,10 @@ CREATE TABLE `books`
 (
   `book_id` int NOT NULL AUTO_INCREMENT,
   `author_id` int DEFAULT NULL,
-  `title` varchar
-(100) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `description` text,
+  `photo` varchar(255),
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY
 (`book_id`),
   KEY `author_id`
@@ -345,17 +348,21 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users`
 (
   `id` int NOT NULL AUTO_INCREMENT,
-  `username` varchar
-(50) NOT NULL,
-  `password` varchar
-(100) NOT NULL,
-  `role` enum
-('admin','user') NOT NULL DEFAULT 'user',
+  `username` varchar(50) NOT NULL,
+  `password` varchar(100) NOT NULL,
+  `role` enum('admin','user') NOT NULL DEFAULT 'user',
+  `favorite_book_id` int DEFAULT NULL,
+  `profile_image` varchar(255),
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY
 (`id`),
   UNIQUE KEY `username`
-(`username`)
+(`username`),
+  KEY `favorite_book_id`
+(`favorite_book_id`),
+  CONSTRAINT `users_ibfk_1` FOREIGN KEY
+(`favorite_book_id`) REFERENCES `books`
+(`book_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
