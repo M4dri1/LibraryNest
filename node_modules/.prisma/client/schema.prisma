@@ -21,7 +21,7 @@ model Author {
 model Book {
   book_id     Int      @id @default(autoincrement())
   title       String
-  description String   @db.Text
+  description String?  @db.Text
   author_id   Int
   photo       String?
   created_at  DateTime @default(now())

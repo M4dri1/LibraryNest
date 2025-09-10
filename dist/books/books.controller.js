@@ -81,8 +81,20 @@ let BooksController = class BooksController {
         return { message: 'Book deleted successfully' };
     }
     async removeApi(id) {
-        await this.booksService.remove(+id);
-        return { message: 'Book deleted successfully' };
+        try {
+            await this.booksService.remove(+id);
+            return { message: 'Book deleted successfully' };
+        }
+        catch (error) {
+            if (error.message.includes('not found')) {
+                return {
+                    statusCode: 404,
+                    message: `Book with ID ${id} not found`,
+                    error: 'Not Found'
+                };
+            }
+            throw error;
+        }
     }
     async updateImage(id, file) {
         if (!file) {

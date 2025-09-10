@@ -18,7 +18,6 @@ let LoansService = class LoansService {
         this.prisma = prisma;
     }
     async create(createLoanDto) {
-        // Check if book is already loaned by this user
         const existingLoan = await this.prisma.loan.findFirst({
             where: {
                 user_id: createLoanDto.user_id,

@@ -29,26 +29,17 @@ const Books = () => {
     }, [currentPage, searchQuery]);
     const fetchBooks = async () => {
         try {
-            const page = currentPage + 1;
-            const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
-            // Use the same endpoint for both search and regular pagination
-            const response = await axios_1.default.get(`/api/books?page=${page}&limit=${limit}${searchParam}`);
-            // The API now always returns paginated format
-            const booksData = response.data.books;
-            if (Array.isArray(booksData)) {
-                setBooks(booksData);
-            }
-            else {
-                console.error('Books data is not an array:', booksData);
-                setBooks([]);
-            }
+            setLoading(true);
+            const response = await axios_1.default.get(`/api/books?page=${currentPage + 1}&limit=${limit}&search=${searchQuery}`);
+            const booksData = response.data.books || response.data || [];
+            setBooks(Array.isArray(booksData) ? booksData : []);
             setTotalPages(response.data.totalPages || 0);
-            setLoading(false);
         }
         catch (err) {
-            console.error('Error fetching books:', err);
             setError('Failed to fetch books');
-            setBooks([]); // Ensure books is always an array
+            setBooks([]);
+        }
+        finally {
             setLoading(false);
         }
     };
@@ -59,15 +50,16 @@ const Books = () => {
             if (Array.isArray(authorsData)) {
                 setAuthors(authorsData);
             }
+            else if (authorsData && Array.isArray(authorsData.authors)) {
+                setAuthors(authorsData.authors);
+            }
             else {
-                console.error('Authors data is not an array:', authorsData);
                 setAuthors([]);
             }
         }
         catch (err) {
-            console.error('Error fetching authors:', err);
             setError('Failed to fetch authors');
-            setAuthors([]); // Ensure authors is always an array
+            setAuthors([]);
         }
     };
     const getAuthorName = (authorId) => {
@@ -98,14 +90,20 @@ const Books = () => {
         if (!editData.title.trim() || !editData.author_id || !editingBook)
             return;
         try {
-            await axios_1.default.put(`/api/books/${editingBook}`, {
+            const payload = {
                 title: editData.title.trim(),
                 author_id: Number(editData.author_id)
-            });
+            };
+            console.log('Updating book with payload:', payload);
+            await axios_1.default.patch(`/api/books/${editingBook}`, payload);
             setEditingBook(null);
+            setEditData({ title: '', author_id: '' });
+            setError('');
             fetchBooks();
         }
         catch (err) {
+            console.error('Error updating book:', err);
+            console.error('Error response:', err.response?.data);
             setError('Failed to update book');
         }
     };

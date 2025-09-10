@@ -11,7 +11,7 @@ const Authors: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
-  const [newAuthor, setNewAuthor] = useState({ name: '' })
+  const [newAuthor, setNewAuthor] = useState({ name: '', biography: '' })
   const [editingAuthor, setEditingAuthor] = useState<number | null>(null)
   const [editData, setEditData] = useState({ name: '' })
   const [error, setError] = useState('')
@@ -24,30 +24,35 @@ const Authors: React.FC = () => {
 
   const fetchAuthors = async () => {
     try {
-      const offset = currentPage * limit
-      const [authorsRes, countRes] = await Promise.all([
-        axios.get(`/api/authors?limit=${limit}&offset=${offset}`),
-        axios.get('/api/authors/count')
-      ])
+      setLoading(true)
+      const response = await axios.get(`/api/authors?page=${currentPage + 1}&limit=${limit}`)
       
-      setAuthors(authorsRes.data)
-      setTotalPages(Math.ceil(countRes.data.total / limit))
-      setLoading(false)
+      // Handle both paginated and non-paginated responses
+      if (response.data.authors) {
+        setAuthors(response.data.authors)
+        setTotalPages(response.data.totalPages || 0)
+      } else {
+        setAuthors(Array.isArray(response.data) ? response.data : [])
+        setTotalPages(1)
+      }
     } catch (err) {
       setError('Failed to fetch authors')
+      setAuthors([])
+    } finally {
       setLoading(false)
     }
   }
 
   const handleCreateAuthor = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newAuthor.name.trim()) return
+    if (!newAuthor.name.trim() || !newAuthor.biography.trim()) return
 
     try {
       await axios.post('/api/authors', {
-        name_author: newAuthor.name.trim()
+        name_author: newAuthor.name.trim(),
+        biography: newAuthor.biography.trim()
       })
-      setNewAuthor({ name: '' })
+      setNewAuthor({ name: '', biography: '' })
       fetchAuthors()
     } catch (err) {
       setError('Failed to create author')
@@ -63,7 +68,7 @@ const Authors: React.FC = () => {
     if (!editData.name.trim() || !editingAuthor) return
 
     try {
-      await axios.put(`/api/authors/${editingAuthor}`, {
+      await axios.patch(`/api/authors/${editingAuthor}`, {
         name_author: editData.name.trim()
       })
       setEditingAuthor(null)
@@ -117,6 +122,16 @@ const Authors: React.FC = () => {
               onChange={(e) => setNewAuthor({ ...newAuthor, name: e.target.value })}
               required
             />
+            
+            <label htmlFor="author-biography">Biography:</label>
+            <textarea
+              id="author-biography"
+              value={newAuthor.biography}
+              onChange={(e) => setNewAuthor({ ...newAuthor, biography: e.target.value })}
+              required
+              rows={3}
+            />
+            
             <button type="submit">Add</button>
           </form>
         </section>

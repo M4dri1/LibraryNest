@@ -18,7 +18,6 @@ let ReviewsService = class ReviewsService {
         this.prisma = prisma;
     }
     async create(createReviewDto) {
-        // Validate that book and user exist
         const bookExists = await this.checkBookExists(createReviewDto.book_id);
         const userExists = await this.checkUserExists(createReviewDto.user_id);
         if (!bookExists) {

@@ -6,8 +6,8 @@ export class CreateBookDto {
   title: string;
 
   @IsString()
-  @IsNotEmpty()
-  description: string;
+  @IsOptional()
+  description?: string;
 
   @IsNumber()
   author_id: number;

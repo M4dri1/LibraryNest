@@ -27,24 +27,16 @@ const Books: React.FC = () => {
 
   const fetchBooks = async () => {
     try {
-      const page = currentPage + 1
-      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
+      setLoading(true)
+      const response = await axios.get(`/api/books?page=${currentPage + 1}&limit=${limit}&search=${searchQuery}`)
       
-      const response = await axios.get(`/api/books?page=${page}&limit=${limit}${searchParam}`)
-      const booksData = response.data.books
-      if (Array.isArray(booksData)) {
-        setBooks(booksData)
-      } else {
-        console.error('Books data is not an array:', booksData)
-        setBooks([])
-      }
+      const booksData = response.data.books || response.data || []
+      setBooks(Array.isArray(booksData) ? booksData : [])
       setTotalPages(response.data.totalPages || 0)
-      
-      setLoading(false)
     } catch (err) {
-      console.error('Error fetching books:', err)
       setError('Failed to fetch books')
       setBooks([])
+    } finally {
       setLoading(false)
     }
   }
@@ -55,14 +47,14 @@ const Books: React.FC = () => {
       const authorsData = response.data
       if (Array.isArray(authorsData)) {
         setAuthors(authorsData)
+      } else if (authorsData && Array.isArray(authorsData.authors)) {
+        setAuthors(authorsData.authors)
       } else {
-        console.error('Authors data is not an array:', authorsData)
         setAuthors([])
       }
     } catch (err) {
-      console.error('Error fetching authors:', err)
       setError('Failed to fetch authors')
-      setAuthors([])
+      setAuthors([]) 
     }
   }
 
@@ -96,13 +88,21 @@ const Books: React.FC = () => {
     if (!editData.title.trim() || !editData.author_id || !editingBook) return
 
     try {
-      await axios.put(`/api/books/${editingBook}`, {
+      const payload = {
         title: editData.title.trim(),
         author_id: Number(editData.author_id)
-      })
+      };
+      
+      console.log('Updating book with payload:', payload);
+      
+      await axios.patch(`/api/books/${editingBook}`, payload)
       setEditingBook(null)
+      setEditData({ title: '', author_id: '' })
+      setError('') 
       fetchBooks()
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Error updating book:', err);
+      console.error('Error response:', err.response?.data);
       setError('Failed to update book')
     }
   }

@@ -19,7 +19,12 @@ let BooksService = class BooksService {
     }
     async create(createBookDto) {
         return this.prisma.book.create({
-            data: createBookDto,
+            data: {
+                title: createBookDto.title,
+                description: createBookDto.description || null,
+                author_id: createBookDto.author_id,
+                photo: createBookDto.photo || null,
+            },
             include: {
                 author: true,
             },
@@ -89,13 +94,24 @@ let BooksService = class BooksService {
     async update(id, updateBookDto) {
         return this.prisma.book.update({
             where: { book_id: id },
-            data: updateBookDto,
+            data: {
+                title: updateBookDto.title,
+                description: updateBookDto.description || null,
+                author_id: updateBookDto.author_id,
+                photo: updateBookDto.photo || null,
+            },
             include: {
                 author: true,
             },
         });
     }
     async remove(id) {
+        const book = await this.prisma.book.findUnique({
+            where: { book_id: id },
+        });
+        if (!book) {
+            throw new Error(`Book with ID ${id} not found`);
+        }
         await this.prisma.book.delete({
             where: { book_id: id },
         });
