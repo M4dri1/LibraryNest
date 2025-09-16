@@ -32,39 +32,32 @@ export class BooksService {
       }
     } : {};
     
-    const [books, total] = await Promise.all([
-      this.prisma.book.findMany({
-        where: whereClause,
-        skip: offset,
-        take: limitNum,
-        include: {
-          author: true,
-        },
-        orderBy: {
-          book_id: 'asc',
-        },
-      }),
-      this.prisma.book.count({
-        where: whereClause,
-      }),
-    ]);
+    const books = await this.prisma.book.findMany({
+      where: whereClause,
+      skip: offset,
+      take: limitNum,
+      include: {
+        author: true,
+      },
+      orderBy: {
+        book_id: 'asc',
+      },
+    });
+
+    const totalBooks = await this.prisma.book.count({ where: whereClause });
 
     const transformedBooks = books.map(book => ({
       book_id: book.book_id,
       title: book.title,
       description: book.description,
-      photo: book.photo,
-      created_at: book.created_at,
+      photo: book.photo ? `http://localhost:8080/api/uploads/${book.photo}` : null,
       author_name: book.author.name_author,
       author_id: book.author.author_id,
     }));
 
     return {
       books: transformedBooks,
-      total,
-      page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil(total / limitNum)
+      totalPages: Math.ceil(totalBooks / limitNum),
     };
   }
 
@@ -82,8 +75,7 @@ export class BooksService {
       book_id: book.book_id,
       title: book.title,
       description: book.description,
-      photo: book.photo,
-      created_at: book.created_at,
+      photo: book.photo ? `http://localhost:8080/api/uploads/${book.photo}` : null,
       author_name: book.author.name_author,
       author_id: book.author.author_id,
     };

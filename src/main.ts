@@ -18,6 +18,8 @@ async function bootstrap() {
   app.enableCors({
     origin: true,
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Authorization,Content-Type',
   });
 
   app.use(
@@ -29,10 +31,6 @@ async function bootstrap() {
     }),
   );
 
-  app.useStaticAssets(join(__dirname, '..', 'FRONTEND', 'react-dist'));
-  app.useStaticAssets(join(__dirname, '..', 'FRONTEND', 'uploads'), {
-    prefix: '/api/uploads/',
-  });
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');

@@ -16,7 +16,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "react-dev": "vite",
-    "react-build": "tsc -p tsconfig.react.json && vite build",
+    "react-build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {

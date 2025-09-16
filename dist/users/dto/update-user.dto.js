@@ -15,6 +15,7 @@ const create_user_dto_1 = require("./create-user.dto");
 const class_validator_1 = require("class-validator");
 class UpdateUserDto extends (0, mapped_types_1.PartialType)(create_user_dto_1.CreateUserDto) {
     profile_image;
+    description;
 }
 exports.UpdateUserDto = UpdateUserDto;
 __decorate([
@@ -22,3 +23,8 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateUserDto.prototype, "profile_image", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "description", void 0);

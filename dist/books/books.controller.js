@@ -54,9 +54,9 @@ let BooksController = class BooksController {
             return res.json(books);
         }
     }
-    async findAllApi(page, limit, search) {
-        const pageNum = page ? Number(page) : 1;
-        const limitNum = limit ? Number(limit) : 5;
+    async findAllApi(page = '1', limit = '5', search) {
+        const pageNum = Number(page);
+        const limitNum = Number(limit);
         const result = await this.booksService.findAll(pageNum, limitNum, search);
         console.log('BooksController findAllApi result:', JSON.stringify(result, null, 2));
         return result;

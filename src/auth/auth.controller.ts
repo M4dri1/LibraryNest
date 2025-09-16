@@ -12,13 +12,29 @@ export class AuthController {
   @Post('login')
   @UseGuards(LocalAuthGuard)
   async login(@Request() req, @Body() loginDto: LoginDto) {
-    return this.authService.login(req.user);
+    const loginData = await this.authService.login(req.user);
+    return {
+      token: loginData.access_token,
+      user: {
+        id: loginData.id,
+        username: loginData.username,
+        role: loginData.role,
+      },
+    };
   }
 
   @Post('api/login')
   @UseGuards(LocalAuthGuard)
   async loginApi(@Request() req, @Body() loginDto: LoginDto) {
-    return this.authService.login(req.user);
+    const loginData = await this.authService.login(req.user);
+    return {
+      token: loginData.access_token,
+      user: {
+        id: loginData.id,
+        username: loginData.username,
+        role: loginData.role,
+      },
+    };
   }
 
   @Post('register')

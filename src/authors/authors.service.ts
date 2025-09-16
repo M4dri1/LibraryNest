@@ -21,7 +21,7 @@ export class AuthorsService {
         this.prisma.author.findMany({
           skip: offset,
           take: limit,
-          orderBy: { created_at: 'desc' }
+          orderBy: { author_id: 'asc' }
         }),
         this.prisma.author.count(),
       ]);
@@ -35,9 +35,16 @@ export class AuthorsService {
       };
     }
 
-    return this.prisma.author.findMany({ 
-      orderBy: { created_at: 'desc' } 
+    const authors = await this.prisma.author.findMany({ 
+      orderBy: { author_id: 'asc' } 
     });
+    return { 
+      authors: authors,
+      total: authors.length,
+      page: 1,
+      limit: authors.length,
+      totalPages: 1
+    };
   }
 
   async findOne(id: number) {

@@ -19,8 +19,8 @@ const users_module_1 = require("./users/users.module");
 const loans_module_1 = require("./loans/loans.module");
 const reviews_module_1 = require("./reviews/reviews.module");
 const auth_module_1 = require("./auth/auth.module");
-const simple_books_controller_1 = require("./simple-books.controller");
 const prisma_module_1 = require("./prisma/prisma.module");
+const uploads_controller_1 = require("./uploads.controller");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -32,14 +32,26 @@ exports.AppModule = AppModule = __decorate([
             }),
             prisma_module_1.PrismaModule,
             serve_static_1.ServeStaticModule.forRoot({
+                rootPath: (0, path_1.join)(__dirname, '..', 'FRONTEND', 'uploads'),
+                serveRoot: '/api/uploads',
+                serveStaticOptions: { cacheControl: false, etag: false, lastModified: false, maxAge: 0 },
+            }),
+            serve_static_1.ServeStaticModule.forRoot({
                 rootPath: (0, path_1.join)(__dirname, '..', 'FRONTEND', 'react-dist'),
-                exclude: ['/api*'],
+                exclude: ['/api*', '/api/*'],
+                serveStaticOptions: { cacheControl: false, etag: false, lastModified: false, maxAge: 0 },
             }),
             platform_express_1.MulterModule.register({
                 storage: (0, multer_1.diskStorage)({
-                    destination: (0, path_1.join)(__dirname, '..', 'FRONTEND', 'uploads'),
+                    destination: (req, file, cb) => {
+                        const uploadPath = (0, path_1.join)(__dirname, '..', 'FRONTEND', 'uploads');
+                        console.log('Multer destination path:', uploadPath);
+                        cb(null, uploadPath);
+                    },
                     filename: (req, file, cb) => {
-                        cb(null, `${Date.now()}-${file.originalname}`);
+                        const filename = `${Date.now()}-${Math.floor(Math.random() * 1000000000)}.${file.originalname.split('.').pop()}`;
+                        console.log('Multer filename:', filename);
+                        cb(null, filename);
                     },
                 }),
             }),
@@ -50,6 +62,6 @@ exports.AppModule = AppModule = __decorate([
             reviews_module_1.ReviewsModule,
             auth_module_1.AuthModule,
         ],
-        controllers: [simple_books_controller_1.SimpleBooksController],
+        controllers: [uploads_controller_1.UploadsController],
     })
 ], AppModule);

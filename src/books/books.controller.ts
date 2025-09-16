@@ -49,9 +49,9 @@ export class BooksController {
   }
 
   @Get('api/books')
-  async findAllApi(@Query('page') page?: string, @Query('limit') limit?: string, @Query('search') search?: string) {
-    const pageNum = page ? Number(page) : 1;
-    const limitNum = limit ? Number(limit) : 5;
+  async findAllApi(@Query('page') page: string = '1', @Query('limit') limit: string = '5', @Query('search') search?: string) {
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
     
     const result = await this.booksService.findAll(pageNum, limitNum, search);
     console.log('BooksController findAllApi result:', JSON.stringify(result, null, 2));

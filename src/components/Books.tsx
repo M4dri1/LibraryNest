@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api'
 import Layout from './Layout'
 import { useAuth } from '../contexts/AuthContext'
 import { Book, Author } from '../types'
@@ -21,40 +21,38 @@ const Books: React.FC = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchAuthors()
-    fetchBooks()
-  }, [currentPage, searchQuery])
+    console.log('[Books] bundle v2025-09-15T15:02')
+    try { alert('Books bundle v2025-09-15T15:02 loaded'); } catch {}
+    fetchAuthors();
+  }, []);
+
+  useEffect(() => {
+    if (authors.length > 0) {
+      fetchBooks();
+    }
+  }, [currentPage, searchQuery, authors]);
 
   const fetchBooks = async () => {
-    try {
-      setLoading(true)
-      const response = await axios.get(`/api/books?page=${currentPage + 1}&limit=${limit}&search=${searchQuery}`)
-      
-      const booksData = response.data.books || response.data || []
-      setBooks(Array.isArray(booksData) ? booksData : [])
-      setTotalPages(response.data.totalPages || 0)
-    } catch (err) {
-      setError('Failed to fetch books')
+    setLoading(true)
+    const page = currentPage + 1
+    const response = await api.get(`/api/books?limit=${limit}&page=${page}&search=${searchQuery}`)
+
+    if (response.data && Array.isArray(response.data.books)) {
+      setBooks(response.data.books)
+      setTotalPages(response.data.totalPages)
+    } else {
       setBooks([])
-    } finally {
-      setLoading(false)
+      setTotalPages(0)
     }
+    setLoading(false)
   }
 
   const fetchAuthors = async () => {
-    try {
-      const response = await axios.get('/api/authors?limit=9999&offset=0')
-      const authorsData = response.data
-      if (Array.isArray(authorsData)) {
-        setAuthors(authorsData)
-      } else if (authorsData && Array.isArray(authorsData.authors)) {
-        setAuthors(authorsData.authors)
-      } else {
-        setAuthors([])
-      }
-    } catch (err) {
-      setError('Failed to fetch authors')
-      setAuthors([]) 
+    const response = await api.get('/api/authors?limit=9999&page=1')
+    if (response.data && Array.isArray(response.data.authors)) {
+      setAuthors(response.data.authors);
+    } else {
+      setAuthors([]);
     }
   }
 
@@ -67,16 +65,12 @@ const Books: React.FC = () => {
     e.preventDefault()
     if (!newBook.title.trim() || !newBook.author_id) return
 
-    try {
-      await axios.post('/api/books', {
-        title: newBook.title.trim(),
-        author_id: Number(newBook.author_id)
-      })
-      setNewBook({ title: '', author_id: '' })
-      fetchBooks()
-    } catch (err) {
-      setError('Failed to create book')
-    }
+    await api.post('/api/books', {
+      title: newBook.title.trim(),
+      author_id: Number(newBook.author_id)
+    })
+    setNewBook({ title: '', author_id: '' })
+    fetchBooks()
   }
 
   const handleEditBook = (book: Book) => {
@@ -87,24 +81,16 @@ const Books: React.FC = () => {
   const handleSaveEdit = async () => {
     if (!editData.title.trim() || !editData.author_id || !editingBook) return
 
-    try {
-      const payload = {
-        title: editData.title.trim(),
-        author_id: Number(editData.author_id)
-      };
-      
-      console.log('Updating book with payload:', payload);
-      
-      await axios.patch(`/api/books/${editingBook}`, payload)
-      setEditingBook(null)
-      setEditData({ title: '', author_id: '' })
-      setError('') 
-      fetchBooks()
-    } catch (err: any) {
-      console.error('Error updating book:', err);
-      console.error('Error response:', err.response?.data);
-      setError('Failed to update book')
+    const payload = {
+      title: editData.title.trim(),
+      author_id: Number(editData.author_id)
     }
+    
+    await api.patch(`/api/books/${editingBook}`, payload)
+    setEditingBook(null)
+    setEditData({ title: '', author_id: '' })
+    setError('') 
+    fetchBooks()
   }
 
   const handleCancelEdit = () => {
@@ -114,12 +100,18 @@ const Books: React.FC = () => {
 
   const handleDeleteBook = async (bookId: number) => {
     if (!confirm('Are you sure you want to delete this book?')) return
-
     try {
-      await axios.delete(`/api/books/${bookId}`)
-      fetchBooks()
+      console.log('[Books] Deleting book id=', bookId)
+      alert(`Deleting book id= ${bookId}`)
+      await api.delete(`/api/books/${bookId}`)
+      console.log('[Books] Deleted OK id=', bookId)
+      alert('Book deleted successfully')
+      await fetchBooks()
+      setError('')
     } catch (err) {
+      console.error('[Books] Delete failed id=', bookId, err)
       setError('Failed to delete book')
+      alert('Failed to delete book')
     }
   }
 
@@ -143,6 +135,9 @@ const Books: React.FC = () => {
 
   return (
     <Layout title="Books">
+      <div style={{backgroundColor: 'red', color: 'white', padding: '10px'}}>
+        DEBUG: totalPages = {totalPages} | books count = {books.length}
+      </div>
       {error && <div className="error-message">{error}</div>}
       
       {isAdmin && (
@@ -247,11 +242,11 @@ const Books: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => navigate(`/books/${book.book_id}`)}>View</button>
+                          <button type="button" onClick={() => navigate(`/books/${book.book_id}`)}>View</button>
                           {isAdmin && (
                             <>
-                              <button onClick={() => handleEditBook(book)}>Edit</button>
-                              <button onClick={() => handleDeleteBook(book.book_id)}>Delete</button>
+                              <button type="button" onClick={() => handleEditBook(book)}>Edit</button>
+                              <button type="button" onClick={() => handleDeleteBook(book.book_id)}>Delete</button>
                             </>
                           )}
                         </>
@@ -265,6 +260,7 @@ const Books: React.FC = () => {
 
           {totalPages > 1 && (
             <div className="pagination">
+              <p>Total Pages: {totalPages} | Current Page: {currentPage + 1}</p>
               {Array.from({ length: totalPages }, (_, i) => (
                 <button
                   key={i}

@@ -52,9 +52,9 @@ export class AuthorsController {
   }
 
   @Get('api/authors')
-  async findAllApi(@Query('page') page?: string, @Query('limit') limit?: string) {
-    const pageNum = page ? Number(page) : undefined;
-    const limitNum = limit ? Number(limit) : undefined;
+  async findAllApi(@Query('page') page: string = '1', @Query('limit') limit: string = '1000') {
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
     
     return this.authorsService.findAll(pageNum, limitNum);
   }

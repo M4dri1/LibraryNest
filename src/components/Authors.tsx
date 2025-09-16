@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api'
 import Layout from './Layout'
 import { useAuth } from '../contexts/AuthContext'
 import { Author } from '../types'
@@ -19,15 +19,16 @@ const Authors: React.FC = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
+    console.log('[Authors] isAdmin =', isAdmin)
     fetchAuthors()
   }, [currentPage])
 
   const fetchAuthors = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`/api/authors?page=${currentPage + 1}&limit=${limit}`)
+      const response = await api.get(`/api/authors?page=${currentPage + 1}&limit=${limit}`)
       
-      // Handle both paginated and non-paginated responses
+      
       if (response.data.authors) {
         setAuthors(response.data.authors)
         setTotalPages(response.data.totalPages || 0)
@@ -48,7 +49,7 @@ const Authors: React.FC = () => {
     if (!newAuthor.name.trim() || !newAuthor.biography.trim()) return
 
     try {
-      await axios.post('/api/authors', {
+      await api.post('/api/authors', {
         name_author: newAuthor.name.trim(),
         biography: newAuthor.biography.trim()
       })
@@ -68,13 +69,17 @@ const Authors: React.FC = () => {
     if (!editData.name.trim() || !editingAuthor) return
 
     try {
-      await axios.patch(`/api/authors/${editingAuthor}`, {
+      console.log('[Authors] Saving edit id=', editingAuthor)
+      await api.patch(`/api/authors/${editingAuthor}`, {
         name_author: editData.name.trim()
       })
+      alert('Author updated successfully')
       setEditingAuthor(null)
       fetchAuthors()
     } catch (err) {
+      console.error('[Authors] Update failed id=', editingAuthor, err)
       setError('Failed to update author')
+      alert('Failed to update author')
     }
   }
 
@@ -87,10 +92,14 @@ const Authors: React.FC = () => {
     if (!confirm('Are you sure you want to delete this author?')) return
 
     try {
-      await axios.delete(`/api/authors/${authorId}`)
+      console.log('[Authors] Deleting author id=', authorId)
+      await api.delete(`/api/authors/${authorId}`)
+      alert('Author deleted successfully')
       fetchAuthors()
     } catch (err) {
+      console.error('[Authors] Delete failed id=', authorId, err)
       setError('Failed to delete author')
+      alert('Failed to delete author')
     }
   }
 
@@ -166,16 +175,16 @@ const Authors: React.FC = () => {
                   <div className="action-buttons">
                     {editingAuthor === author.author_id ? (
                       <>
-                        <button onClick={handleSaveEdit}>Save</button>
-                        <button onClick={handleCancelEdit}>Cancel</button>
+                        <button type="button" onClick={handleSaveEdit}>Save</button>
+                        <button type="button" onClick={handleCancelEdit}>Cancel</button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => navigate(`/authors/${author.author_id}`)}>View</button>
+                        <button type="button" onClick={() => navigate(`/authors/${author.author_id}`)}>View</button>
                         {isAdmin && (
                           <>
-                            <button onClick={() => handleEditAuthor(author)}>Edit</button>
-                            <button onClick={() => handleDeleteAuthor(author.author_id)}>Delete</button>
+                            <button type="button" onClick={() => handleEditAuthor(author)}>Edit</button>
+                            <button type="button" onClick={() => handleDeleteAuthor(author.author_id)}>Delete</button>
                           </>
                         )}
                       </>

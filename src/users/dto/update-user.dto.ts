@@ -6,4 +6,8 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsString()
   @IsOptional()
   profile_image?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
 }

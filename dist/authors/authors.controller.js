@@ -55,9 +55,9 @@ let AuthorsController = class AuthorsController {
             return res.json(authors);
         }
     }
-    async findAllApi(page, limit) {
-        const pageNum = page ? Number(page) : undefined;
-        const limitNum = limit ? Number(limit) : undefined;
+    async findAllApi(page = '1', limit = '1000') {
+        const pageNum = Number(page);
+        const limitNum = Number(limit);
         return this.authorsService.findAll(pageNum, limitNum);
     }
     async create(createAuthorDto) {

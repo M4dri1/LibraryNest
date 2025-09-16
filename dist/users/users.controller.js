@@ -18,6 +18,8 @@ const platform_express_1 = require("@nestjs/platform-express");
 const users_service_1 = require("./users.service");
 const update_user_dto_1 = require("./dto/update-user.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const fs_1 = require("fs");
+const path_1 = require("path");
 let UsersController = class UsersController {
     usersService;
     constructor(usersService) {
@@ -40,22 +42,72 @@ let UsersController = class UsersController {
         return { message: 'Book added to favorites' };
     }
     async updateProfile(req, updateUserDto, file) {
+        console.log('Update profile request:', { updateUserDto, file: file?.filename, user: req.user });
         if (file) {
             updateUserDto.profile_image = file.filename;
         }
-        return this.usersService.update(req.user.id, updateUserDto);
+        const result = await this.usersService.update(req.user.id, updateUserDto);
+        console.log('Update profile result:', result);
+        const profile = await this.usersService.findOne(req.user.id);
+        return profile;
+    }
+    async uploadImage(req, file, body) {
+        if (!file) {
+            throw new Error('No file provided');
+        }
+        const currentUser = await this.usersService.findByIdRaw(req.user.id);
+        await this.usersService.updateProfileImage(req.user.id, file.filename);
+        return await this.usersService.findOne(req.user.id);
+    }
+    async saveDescription(req, body) {
+        await this.usersService.updateDescription(req.user.id, body.description);
+        return await this.usersService.findOne(req.user.id);
     }
     async updateProfileApi(req, updateUserDto, file) {
+        console.log('=== UPDATE PROFILE DEBUG ===');
+        console.log('Raw body:', req.body);
+        console.log('UpdateUserDto:', updateUserDto);
+        console.log('File:', file ? { filename: file.filename, originalname: file.originalname } : null);
+        console.log('User:', req.user);
+        const updateData = {};
         if (file) {
-            updateUserDto.profile_image = file.filename;
+            updateData.profile_image = file.filename;
+            console.log('Adding profile_image to update:', file.filename);
         }
-        return this.usersService.update(req.user.id, updateUserDto);
+        if (updateUserDto.description !== undefined && updateUserDto.description !== null && updateUserDto.description.trim() !== '') {
+            updateData.description = updateUserDto.description;
+            console.log('Adding description to update:', updateUserDto.description);
+        }
+        console.log('Final update data:', updateData);
+        const result = await this.usersService.update(req.user.id, updateData);
+        console.log('Update result:', result);
+        const profile = await this.usersService.findOne(req.user.id);
+        console.log('Final profile:', profile);
+        console.log('=== END DEBUG ===');
+        return profile;
     }
     async getProfile(req) {
         return this.usersService.findOne(req.user.id);
     }
     async getProfileApi(req) {
-        return this.usersService.findOne(req.user.id);
+        const profile = await this.usersService.findOne(req.user.id);
+        console.log('Profile API response:', profile);
+        console.log('Profile image field:', profile?.profile_image);
+        return profile;
+    }
+    async debugUpdateProfile(req, updateUserDto, file) {
+        console.log('Debug upload request:', { updateUserDto, file: file ? file.filename : null });
+        if (file) {
+            updateUserDto.profile_image = file.filename;
+            const filePath = (0, path_1.join)(__dirname, '..', '..', 'FRONTEND', 'uploads', file.filename);
+            console.log('Expected file path:', filePath, 'exists:', (0, fs_1.existsSync)(filePath));
+        }
+        const result = await this.usersService.update(req.user?.id || 0, updateUserDto).catch(e => {
+            console.error('Debug update error:', e);
+            return null;
+        });
+        const profile = await this.usersService.findOne(req.user?.id || 0);
+        return { result, profile };
     }
 };
 exports.UsersController = UsersController;
@@ -95,8 +147,8 @@ __decorate([
 ], UsersController.prototype, "addToFavoritesApi", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, common_1.Post)('update-profile'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('profile_image')),
+    (0, common_1.Post)('update-profile'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.UploadedFile)()),
@@ -106,8 +158,28 @@ __decorate([
 ], UsersController.prototype, "updateProfile", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, common_1.Post)('api/update-profile'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image')),
+    (0, common_1.Post)('api/upload-image'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.UploadedFile)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "uploadImage", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('api/save-description'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "saveDescription", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('profile_image')),
+    (0, common_1.Post)('api/update-profile'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.UploadedFile)()),
@@ -131,6 +203,16 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getProfileApi", null);
+__decorate([
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('profile_image')),
+    (0, common_1.Post)('api/debug/update-profile'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, update_user_dto_1.UpdateUserDto, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "debugUpdateProfile", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [users_service_1.UsersService])

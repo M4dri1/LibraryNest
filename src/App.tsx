@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import Root from './components/Root';
 import Login from './components/Login'
 import Register from './components/Register'
 import Books from './components/Books'
@@ -15,7 +16,7 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Root />} />
           <Route path="/register" element={<Register />} />
           <Route path="/books" element={
             <ProtectedRoute>

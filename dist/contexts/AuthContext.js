@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthProvider = exports.useAuth = void 0;
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
-const axios_1 = __importDefault(require("axios"));
+const api_1 = __importDefault(require("../api"));
 const AuthContext = (0, react_1.createContext)(undefined);
 const useAuth = () => {
     const context = (0, react_1.useContext)(AuthContext);
@@ -19,26 +19,26 @@ exports.useAuth = useAuth;
 const AuthProvider = ({ children }) => {
     const [user, setUser] = (0, react_1.useState)(() => {
         const savedUser = localStorage.getItem('user');
-        return savedUser ? JSON.parse(savedUser) : null;
+        if (savedUser && savedUser !== 'undefined') {
+            try {
+                return JSON.parse(savedUser);
+            }
+            catch (error) {
+                console.error('Could not parse user from localStorage', error);
+                return null;
+            }
+        }
+        return null;
     });
     const [token, setToken] = (0, react_1.useState)(localStorage.getItem('token'));
-    (0, react_1.useEffect)(() => {
-        if (token) {
-            axios_1.default.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        }
-        else {
-            delete axios_1.default.defaults.headers.common['Authorization'];
-        }
-    }, [token]);
     const login = async (username, password) => {
         try {
-            const response = await axios_1.default.post('/api/login', { username, password });
-            const userData = response.data;
-            const newToken = btoa(`${username}:${Date.now()}`);
+            const response = await api_1.default.post('/api/login', { username, password });
+            const { user: userData, token: newToken } = response.data;
             setUser(userData);
             setToken(newToken);
-            localStorage.setItem('token', newToken);
             localStorage.setItem('user', JSON.stringify(userData));
+            localStorage.setItem('token', newToken);
             return true;
         }
         catch (error) {
@@ -47,7 +47,7 @@ const AuthProvider = ({ children }) => {
     };
     const register = async (username, password) => {
         try {
-            await axios_1.default.post('/api/register', { username, password });
+            await api_1.default.post('/api/register', { username, password });
             return true;
         }
         catch (error) {
@@ -59,7 +59,6 @@ const AuthProvider = ({ children }) => {
         setToken(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        delete axios_1.default.defaults.headers.common['Authorization'];
     };
     const value = {
         user,
@@ -68,7 +67,7 @@ const AuthProvider = ({ children }) => {
         register,
         logout,
         isAuthenticated: !!token,
-        isAdmin: user?.role === 'admin'
+        isAdmin: user?.role === 'admin',
     };
     return (0, jsx_runtime_1.jsx)(AuthContext.Provider, { value: value, children: children });
 };

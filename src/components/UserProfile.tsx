@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../api'
 import Layout from './Layout'
 import { useAuth } from '../contexts/AuthContext'
 import { User, Loan } from '../types'
@@ -23,23 +23,42 @@ const UserProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'loans' | 'favorite'>('profile')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [imgVersion, setImgVersion] = useState(0)
   const [description, setDescription] = useState('')
   const [editingDescription, setEditingDescription] = useState(false)
 
+  const buildImageSrc = (path?: string | null) => {
+    if (!path) return ''
+    // append version even for absolute URLs to avoid stale cache
+    if (path.startsWith('http')) return `${path}${imgVersion ? (path.includes('?') ? `&v=${imgVersion}` : `?v=${imgVersion}`) : ''}`
+    if (path.startsWith('/')) return `${path}${imgVersion ? (path.includes('?') ? `&v=${imgVersion}` : `?v=${imgVersion}`) : ''}`
+    // append a version to bust cache/race after uploads
+    return `/api/uploads/${path}${imgVersion ? `?v=${imgVersion}` : ''}`
+  }
+
   useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) return
     fetchProfile()
     fetchLoans()
     fetchFavoriteBook()
   }, [])
 
+  useEffect(() => {
+    if (profile?.description !== undefined) {
+      setDescription(profile.description || '')
+    }
+  }, [profile?.description])
+
   const fetchProfile = async () => {
     try {
-      const response = await axios.get(`/api/get-profile?username=${user?.username}`)
+      const response = await api.get('/api/get-profile')
       setProfile(response.data)
-      setDescription(response.data.description || '')
-      setLoading(false)
-    } catch (err) {
-      setError('Failed to fetch profile')
+      setError('')
+      // nada adicional: render direto usa buildImageSrc + key
+    } catch (e) {
+      setError('Failed to load profile. Please login again.')
+    } finally {
       setLoading(false)
     }
   }
@@ -47,51 +66,46 @@ const UserProfile: React.FC = () => {
   const fetchLoans = async () => {
     if (!user?.username) return
 
-    try {
-      const response = await axios.get(`/api/loans?username=${user.username}`, {
-        withCredentials: true
-      })
-      setLoans(response.data)
-    } catch (err) {
-    }
+    const response = await api.get(`/api/loans?username=${user.username}`)
+    setLoans(response.data)
   }
 
   const fetchFavoriteBook = async () => {
     if (!user?.username) return
 
-    try {
-      const response = await axios.get(`/api/users/favorite?username=${user.username}`)
-      if (response.data) {
-        setFavoriteBook(response.data)
-      } else {
-        setFavoriteBook(null)
-      }
-    } catch (err) {
+    const response = await api.get(`/api/users/favorite?username=${user.username}`)
+    if (response.data) {
+      setFavoriteBook(response.data)
+    } else {
       setFavoriteBook(null)
     }
   }
 
-  const handleImageUpload = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSelectImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+  }
+
+  const handleUploadImage = async () => {
     if (!imageFile) return
-
     setUploading(true)
-    const formData = new FormData()
-    formData.append('profile_image', imageFile)
-    if (user?.username) {
-      formData.append('username', user.username)
-    }
-
     try {
-      const response = await axios.post('/api/update-profile', formData, {
+      const formData = new FormData()
+      formData.append('image', imageFile)
+      const resp = await api.post('/api/upload-image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      setProfile(response.data)
+      // resp.data já contém o perfil atualizado com profile_image
+      if (resp?.data) {
+        setProfile(resp.data)
+      }
+      setImgVersion((v) => v + 1)
       setImageFile(null)
       setError('')
-      alert('Profile image updated successfully!')
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to upload profile image')
+      try { alert('Profile image updated successfully!'); } catch {}
+    } catch (e) {
+      setError('Failed to upload image')
     } finally {
       setUploading(false)
     }
@@ -99,44 +113,32 @@ const UserProfile: React.FC = () => {
 
   const handleUpdateDescription = async () => {
     setUploading(true)
-    const formData = new FormData()
-    formData.append('description', description)
-    if (user?.username) {
-      formData.append('username', user.username)
-    }
 
-    try {
-      const response = await axios.post('/api/update-profile', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      setProfile(response.data)
-      setEditingDescription(false)
-      setError('')
-      alert('Description updated successfully!')
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update description')
-    } finally {
-      setUploading(false)
-    }
+    const response = await api.post('/api/save-description', {
+      description: description
+    })
+
+    setProfile(prev => prev ? {
+      ...prev,
+      description: description
+    } : null)
+    
+    setEditingDescription(false)
+    setError('')
+    alert('Description updated successfully!')
+    setUploading(false)
   }
 
   const handleReturnBook = async (loanId: number) => {
-    try {
-      const response = await axios.post(`/api/return/${loanId}`, {}, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      await fetchLoans()
-      
-      alert('Book returned successfully!')
-      setError('')
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Failed to return book'
-      setError(errorMsg)
-      alert(`Error: ${errorMsg}`)
-    }
+    const response = await api.post(`/api/return/${loanId}`, {}, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    fetchLoans()
+    alert('Book returned successfully!')
+    setError('')
   }
 
   if (loading) {
@@ -179,13 +181,48 @@ const UserProfile: React.FC = () => {
             <p><strong>Username:</strong> {user?.username || 'Unknown'}</p>
             <p><strong>Role:</strong> {user?.role || 'User'}</p>
 
-            {profile?.profile_image && (
-              <img
-                src={`/api/uploads/${profile.profile_image}`}
-                alt="Profile"
-                className="profile-image"
-              />
-            )}
+            <div className="profile-image-container">
+              <h3>Profile Image</h3>
+              <div className="profile-image-display">
+                {profile?.profile_image ? (
+                  <img
+                    src={buildImageSrc(profile.profile_image)}
+                    key={`${profile?.profile_image}-${imgVersion}`}
+                    alt="Profile"
+                    className="profile-image"
+                    style={{
+                      maxWidth: '200px', 
+                      maxHeight: '200px', 
+                      objectFit: 'cover',
+                      border: '2px solid #ddd',
+                      borderRadius: '8px',
+                      display: 'block'
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/api/uploads/default-user.png';
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '200px',
+                    height: '200px',
+                    border: '2px dashed #ccc',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#f9f9f9',
+                    color: '#666'
+                  }}>
+                    No profile image uploaded yet
+                  </div>
+                )}
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                  Current image src: {buildImageSrc(profile?.profile_image) || '—'}
+                </div>
+              </div>
+            </div>
 
             <div className="description-section">
               <h3>Description</h3>
@@ -225,16 +262,17 @@ const UserProfile: React.FC = () => {
 
             <div className="image-upload">
               <h3>Update Profile Image</h3>
-              <form onSubmit={handleImageUpload}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                />
-                <button type="submit" disabled={!imageFile || uploading}>
-                  {uploading ? 'Uploading...' : 'Upload Image'}
-                </button>
-              </form>
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onSelectImage}
+                    disabled={uploading}
+                  />
+                  <button onClick={handleUploadImage} disabled={!imageFile || uploading}>
+                    {uploading ? 'Uploading...' : 'Upload'}
+                  </button>
+                </div>
             </div>
           </section>
         )}
@@ -256,7 +294,7 @@ const UserProfile: React.FC = () => {
                     <div>
                       {loan.photo && (
                         <img
-                          src={`/api/uploads/${loan.photo}`}
+                          src={buildImageSrc(loan.photo)}
                           alt={loan.title}
                           className="loan-book-image"
                         />
@@ -287,7 +325,7 @@ const UserProfile: React.FC = () => {
               <div className="favorite-book-card">
                 {favoriteBook.photo && (
                   <img
-                    src={`/api/uploads/${favoriteBook.photo}`}
+                    src={buildImageSrc(favoriteBook.photo)}
                     alt={favoriteBook.title}
                     className="favorite-book-image"
                   />

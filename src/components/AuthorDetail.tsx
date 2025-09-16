@@ -55,10 +55,10 @@ const AuthorDetail: React.FC = () => {
 
     setUploading(true)
     const formData = new FormData()
-    formData.append('author_image', imageFile)
+    formData.append('file', imageFile)
 
     try {
-      const response = await axios.post(`/api/authors/${id}/update`, formData, {
+      const response = await axios.post(`/api/authors/${id}/image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       setAuthor(prev => prev ? { ...prev, photo: response.data.photo } : null)
@@ -121,9 +121,13 @@ const AuthorDetail: React.FC = () => {
         <div className="author-info">
           {author.photo && (
             <img
-              src={`/api/uploads/${author.photo}`}
+              src={author.photo.startsWith('http') ? author.photo : `/api/uploads/${author.photo}`}
               alt={author.name_author}
               className="author-image"
+              onError={(e) => {
+                e.currentTarget.onerror = null
+                e.currentTarget.src = '/api/uploads/default-user.png'
+              }}
             />
           )}
 

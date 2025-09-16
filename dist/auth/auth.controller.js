@@ -25,10 +25,26 @@ let AuthController = class AuthController {
         this.authService = authService;
     }
     async login(req, loginDto) {
-        return this.authService.login(req.user);
+        const loginData = await this.authService.login(req.user);
+        return {
+            token: loginData.access_token,
+            user: {
+                id: loginData.id,
+                username: loginData.username,
+                role: loginData.role,
+            },
+        };
     }
     async loginApi(req, loginDto) {
-        return this.authService.login(req.user);
+        const loginData = await this.authService.login(req.user);
+        return {
+            token: loginData.access_token,
+            user: {
+                id: loginData.id,
+                username: loginData.username,
+                role: loginData.role,
+            },
+        };
     }
     async register(registerDto) {
         return this.authService.register(registerDto);

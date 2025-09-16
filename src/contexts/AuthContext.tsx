@@ -1,85 +1,81 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import axios from 'axios'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import api from '../api';
 
 interface User {
-  id: number
-  username: string
-  role: string
+  id: number;
+  username: string;
+  role: string;
 }
 
 interface AuthContextType {
-  user: User | null
-  token: string | null
-  login: (username: string, password: string) => Promise<boolean>
-  register: (username: string, password: string) => Promise<boolean>
-  logout: () => void
-  isAuthenticated: boolean
-  isAdmin: boolean
+  user: User | null;
+  token: string | null;
+  login: (username: string, password: string) => Promise<boolean>;
+  register: (username: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
-}
+  return context;
+};
 
 interface AuthProviderProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('user')
-    return savedUser ? JSON.parse(savedUser) : null
-  })
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
-
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    } else {
-      delete axios.defaults.headers.common['Authorization']
+    const savedUser = localStorage.getItem('user');
+    if (savedUser && savedUser !== 'undefined') {
+      try {
+        return JSON.parse(savedUser);
+      } catch (error) {
+        console.error('Could not parse user from localStorage', error);
+        return null;
+      }
     }
-  }, [token])
+    return null;
+  });
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/login', { username, password })
-      const userData = response.data
-      
-      const newToken = btoa(`${username}:${Date.now()}`)
-      
-      setUser(userData)
-      setToken(newToken)
-      localStorage.setItem('token', newToken)
-      localStorage.setItem('user', JSON.stringify(userData))
-      
-      return true
+      const response = await api.post('/api/login', { username, password });
+      const { user: userData, token: newToken } = response.data;
+
+      setUser(userData);
+      setToken(newToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', newToken);
+      return true;
     } catch (error) {
-      return false
+      return false;
     }
-  }
+  };
 
   const register = async (username: string, password: string): Promise<boolean> => {
     try {
-      await axios.post('/api/register', { username, password })
-      return true
+      await api.post('/api/register', { username, password });
+      return true;
     } catch (error) {
-      return false
+      return false;
     }
-  }
+  };
 
   const logout = () => {
-    setUser(null)
-    setToken(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    delete axios.defaults.headers.common['Authorization']
-  }
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
 
   const value = {
     user,
@@ -88,8 +84,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     isAuthenticated: !!token,
-    isAdmin: user?.role === 'admin'
-  }
+    isAdmin: user?.role === 'admin',
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
