@@ -23,7 +23,7 @@ exports.UsersModule = UsersModule = __decorate([
             prisma_module_1.PrismaModule,
             platform_express_1.MulterModule.register({
                 storage: (0, multer_1.diskStorage)({
-                    destination: (0, path_1.join)(__dirname, '..', 'FRONTEND', 'uploads'),
+                    destination: (0, path_1.join)(__dirname, '..', '..', 'FRONTEND', 'uploads'),
                     filename: (req, file, callback) => {
                         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
                         callback(null, uniqueSuffix + (0, path_1.extname)(file.originalname));

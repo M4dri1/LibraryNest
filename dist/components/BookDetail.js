@@ -66,9 +66,9 @@ const BookDetail = () => {
             return;
         setUploading(true);
         const formData = new FormData();
-        formData.append('book_image', imageFile);
+        formData.append('file', imageFile);
         try {
-            await axios_1.default.post(`/api/books/${id}/update`, formData, {
+            await axios_1.default.post(`/api/books/${id}/image`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             fetchBook();
@@ -141,6 +141,6 @@ const BookDetail = () => {
     if (!book) {
         return ((0, jsx_runtime_1.jsxs)(Layout_1.default, { title: "Book Details", children: [(0, jsx_runtime_1.jsx)("div", { className: "error-message", children: "Book not found" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => navigate('/books'), children: "Back to Books" })] }));
     }
-    return ((0, jsx_runtime_1.jsxs)(Layout_1.default, { title: `Book: ${book.title}`, children: [error && (0, jsx_runtime_1.jsx)("div", { className: "error-message", children: error }), (0, jsx_runtime_1.jsxs)("section", { className: "profile-section", children: [(0, jsx_runtime_1.jsx)("button", { onClick: () => navigate('/books'), className: "back-button", children: "\u2190 Back to Books" }), (0, jsx_runtime_1.jsx)("h2", { children: book.title }), (0, jsx_runtime_1.jsxs)("p", { children: [(0, jsx_runtime_1.jsx)("strong", { children: "Author:" }), " ", book.author_name || 'Unknown'] }), (0, jsx_runtime_1.jsxs)("p", { children: [(0, jsx_runtime_1.jsx)("strong", { children: "Description:" }), " ", book.description || 'No description available'] }), book.photo && ((0, jsx_runtime_1.jsx)("img", { src: `/api/uploads/${book.photo}`, alt: book.title, className: "book-image" })), isAdmin && ((0, jsx_runtime_1.jsxs)("div", { className: "image-upload", children: [(0, jsx_runtime_1.jsx)("h3", { children: "Update Book Image" }), (0, jsx_runtime_1.jsxs)("form", { onSubmit: handleImageUpload, children: [(0, jsx_runtime_1.jsx)("input", { type: "file", accept: "image/*", onChange: (e) => setImageFile(e.target.files?.[0] || null), required: true }), (0, jsx_runtime_1.jsx)("button", { type: "submit", disabled: !imageFile || uploading, children: uploading ? 'Uploading...' : 'Update Image' })] })] }))] })] }));
+    return ((0, jsx_runtime_1.jsxs)(Layout_1.default, { title: `Book: ${book.title}`, children: [error && (0, jsx_runtime_1.jsx)("div", { className: "error-message", children: error }), (0, jsx_runtime_1.jsxs)("section", { className: "profile-section", children: [(0, jsx_runtime_1.jsx)("button", { onClick: () => navigate('/books'), className: "back-button", children: "\u2190 Back to Books" }), (0, jsx_runtime_1.jsx)("h2", { children: book.title }), (0, jsx_runtime_1.jsxs)("p", { children: [(0, jsx_runtime_1.jsx)("strong", { children: "Author:" }), " ", book.author_name || 'Unknown'] }), (0, jsx_runtime_1.jsxs)("p", { children: [(0, jsx_runtime_1.jsx)("strong", { children: "Description:" }), " ", book.description || 'No description available'] }), book.photo && ((0, jsx_runtime_1.jsx)("img", { src: book.photo.startsWith('http') ? book.photo : `/api/uploads/${book.photo}`, alt: book.title, className: "book-image" })), isAdmin && ((0, jsx_runtime_1.jsxs)("div", { className: "image-upload", children: [(0, jsx_runtime_1.jsx)("h3", { children: "Update Book Image" }), (0, jsx_runtime_1.jsxs)("form", { onSubmit: handleImageUpload, children: [(0, jsx_runtime_1.jsx)("input", { type: "file", accept: "image/*", onChange: (e) => setImageFile(e.target.files?.[0] || null), required: true }), (0, jsx_runtime_1.jsx)("button", { type: "submit", disabled: !imageFile || uploading, children: uploading ? 'Uploading...' : 'Update Image' })] })] }))] })] }));
 };
 exports.default = BookDetail;

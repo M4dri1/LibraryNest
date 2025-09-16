@@ -105,9 +105,11 @@ export class BooksService {
       throw new Error(`Book with ID ${id} not found`);
     }
 
-    await this.prisma.book.delete({
-      where: { book_id: id },
-    });
+    await this.prisma.$transaction([
+      this.prisma.review.deleteMany({ where: { book_id: id } }),
+      this.prisma.loan.deleteMany({ where: { book_id: id } }),
+      this.prisma.book.delete({ where: { book_id: id } }),
+    ]);
   }
 
   async count(): Promise<number> {
